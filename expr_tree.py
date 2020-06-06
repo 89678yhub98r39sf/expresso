@@ -92,18 +92,11 @@ class ExprTree:
 
     def __init__(self, expAsString, dataStorage = "sparse"):
         self.eas = expAsString
-        self.chunk = None # current chunk to look at
-        self.targetChunk = None
-        self.chunkIndices = None
 
         self.parsedEas = None
         self.extraNode = None
 
         self.size = 0
-        ##self.root = None
-        ##self.subtree = None
-        ##self.mergeSymbol = None
-        ##self.prevSearch = None # operand|operator|block
         self.subtreeAsString = None
         self.possibleDecisions = OrderedDict()
         self.randomDecision = None
@@ -172,7 +165,6 @@ class ExprTree:
 
         return add_one([])
 
-    # TODO: delete this method.
     def find_inner_chunk(self):
         start, end = -1, -1
         for i, x in enumerate(self.eas):
@@ -289,8 +281,6 @@ class ExprTree:
             # syntactical check
             if node != None:
                 isOperand = not ExprTree.is_operator(node.val)
-                ##assert (isOperator and isOperand) or not (isOperator and isOperand), "invalid substring"
-                ##print("NODE:\t", node)
                 v1 = isOperator and isOperand # if current symbol is operand, then previous must be operator
                 v2 = not isOperator and not isOperand
                 v3 = prev == None
@@ -301,18 +291,15 @@ class ExprTree:
                     return False
 
             else:
-                if varData["info"] in {"&", "|"}: return False 
+                if varData["info"] in {"&", "|"}: return False
 
             # if operator, make parent else child
             newNode = ExprTreeNode(varData["info"])
 
             if node == None: node = newNode
             else:
-                ##node = node.attach_node_as(newNode, "p" if isOperator and newNode.val != "! else "c")
                 if newNode.val == "!":
                     node = node.attach_node_as(newNode, "c")
-                    #if node.parent != None:
-                    #    node = node.parent
                 else:
                     node = node.attach_node_as(newNode, "p" if isOperator else "c")
 
@@ -420,27 +407,6 @@ class ExprTree:
             return val + open + q + close
 
     """
-    @staticmethod
-    def test_display(node):
-
-        def d(node):
-            if node == None: return
-
-            print("NODE:\t", node)
-            print("NODE PARENT:\t", node.parent)
-
-            d(node.left)
-            d(node.right)
-
-        d(node)
-    """
-
-
-
-    # TODO : delete or incorporate this method
-    # iterates through parsed results and outputs a random subexpression
-    # that would output True
-    """
     description:
     - makes a random decision given `self.parsedEas`
     """
@@ -504,7 +470,6 @@ class ExprTree:
         if p.right == None: return False
         return True if p.right.index == c.index else False
 
-    # recursively iterates through easParsed and for each OR, creates a
     """
     description:
     - traverses through tree by inorder algorithm and finds a possible decision.
@@ -517,9 +482,6 @@ class ExprTree:
             assert node != None, "node cannot be None!"
             return node.left if direction == "l" else node.right
 
-        """
-        have to initialize ExprTree decision at `decisionIndex` before calling
-        """
         def construct_new_tree(refNode, refNodeIndex, orKey):
 
             if refNode == None: return
@@ -577,7 +539,6 @@ class ExprTree:
         uniqueDecisions = set()
         for x in permIterable:
             # construct the path
-
             for i, k in enumerate(orKey.keys()):
                 orKey[k] = x[i]
 
@@ -593,19 +554,6 @@ class ExprTree:
             else:
                 uniqueDecisions.add(dec)
                 c += 1
-
-    # TODO
-    def inorder_decision_finder_partitioned(self, hop = 100):
-
-        self.permIterable = ExprTree.get_binary_permutations(length, ["l", "r"])
-
-        q = [next(self.permIterable) for i in range(hop)]
-
-
-
-
-        return -1
-
 
     @staticmethod
     def rewind_to_root_(node):
@@ -662,10 +610,6 @@ class ExprTree:
         def locate(node):
             if node == None:
                 return None
-            """
-            if self.loc != None:
-                return
-            """
 
             if node.index == index:
                 self.loc = node
@@ -674,7 +618,6 @@ class ExprTree:
             x = locate(node.left)
             x2 = locate(node.right)
             return x if x != None else x2
-
 
         return locate(self.parsedEas)
 
@@ -694,7 +637,6 @@ class ExprTree:
     return:
     - bool
     """
-    # TODO : undetEval == random not yet implemented
     def evaluate_decision_absolute_truth(self, decision, truthMap, undet = []):
 
         def evaluate(node):
@@ -707,22 +649,17 @@ class ExprTree:
                     leftEval = evaluate(node.left)
                     rightEval = evaluate(node.right)
                     if leftEval == undet or rightEval == undet:
-                        ##print("jsdflasjdlfsjadlfsajd;lfsjdlfsajkldf")
-                        ##return undetEval
                         return undet
                     return leftEval and rightEval
                 elif node.val == "!":
                     rest = evaluate(node.left if node.left != None\
                         else node.right)
                     if rest == undet:
-                        ##print("LSDJFSLADFJLSADFJLAFJSLADFJSD;LJAFJLSAFLJ;KSDA")
-                        ##return undetEval
                         return undet
                     return not rest
 
         return evaluate(decision)
 
-    # TODO: this
     """
     description:
     - outputs the nodes present in the subtree.

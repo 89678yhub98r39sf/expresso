@@ -12,13 +12,6 @@ def ExprTree__find_inner_chunk_test():
     index = et.find_inner_chunk()
     assert q[index[0]:index[1] + 1] == "(B | C)"
 
-    ## MOVE THIS
-    """
-    oo = re.compile(OPERATOR_OR_OPERAND)
-    x = oo.search(" (!A & B)")
-    print("SEARCH RESULT:\t", x)
-    """
-
 def ExprTree__find_outer_chunk_test():
 
     start,end = ExprTree.find_outer_chunk(sample1)
@@ -39,13 +32,11 @@ def ExprTree_parse_test():
     x = et.parse()
     y = ExprTree.inorder_traversal_display(x)
     assert y == " A  &  B  &  C  &  D  |  5 "
-    ##print("SIZE 4:\t", et.size)
 
     et = ExprTree(sample5)
     x = et.parse()
     y = ExprTree.inorder_traversal_display(x)
     assert y == " A  &  B  |  C  &  F  |  E "
-    ##print("SIZE 5:\t", et.size)
 
 
 """
@@ -148,25 +139,21 @@ def ExprTree__traversal_display_test():
     et.process()
     q = ExprTree.traversal_display(et.parsedEas, "partial")
     assert q == sample6, "want {}, got {}".format(sample6, q)
-    ##print("TD s6:\t_" + q + "_")
 
     et = ExprTree(sample7)
     et.process()
     q = ExprTree.traversal_display(et.parsedEas, "partial")
     assert q == sample7, "want {}, got {}".format(sample7, q)
-    ##print("TD s7:\t_" + q + "_")
 
     et = ExprTree(sample8)
     et.process()
     q = ExprTree.traversal_display(et.parsedEas, "partial")
     assert q == sample8, "want {}, got {}".format(sample8, q)
-    ##print("TD s8:\t_" + q + "_")
 
     et = ExprTree(sample9)
     et.process()
     q = ExprTree.traversal_display(et.parsedEas, "partial")
     assert q == sample9, "want {}, got {}".format(sample9, q)
-    ##print("TD s9:\t_" + q + "_")
 
 def ExprTree__get_binary_permutations_test():
     sequenceSize = 5
@@ -177,7 +164,6 @@ def ExprTree__get_binary_permutations_test():
     q = list(allSequences)
     assert len(q) == 2 ** 5, "number of sequences {} does not match {}".format(len(q), 2**5)
 
-# TODO: this method needs further testing.
 """
 this method does not have assertions. Requires human manual check.
 """
@@ -245,7 +231,7 @@ def ExprTree___is_syntactical_test():
 
     e = ExprTree("&")
     e.process()
-    assert e.parsedEas == False    
+    assert e.parsedEas == False
 
 if __name__ == "__main__":
 
