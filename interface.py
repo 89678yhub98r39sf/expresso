@@ -29,6 +29,10 @@ def whilus_loopus():
                     break
                 except:
                     print("invalid number {}".format(q))
+                    
+            if q == None or q not in e.possibleDecisions:
+                print("invalid number {}".format(q))
+                continue 
 
             q = e.possibleDecisions[q]
             q2 = ExprTree.decision_to_choice(q)
