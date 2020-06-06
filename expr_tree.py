@@ -3,18 +3,12 @@ import re
 import random
 from collections import OrderedDict
 
-# TODO : not operator not implemented
-
-# no NOT provided
 LOGIC_OPERATORS = {"&", "|", "!"}
 
-FIRST_PARENTHESIS_EXP = r"\(.*\)" ##r"\(.*\)(?=(.*\())"
-##FIRST_PARENTHESIS_EXP = r"\(.*\)(?=(.*\())"
+FIRST_PARENTHESIS_EXP = r"\(.*\)"
 
 FIRST_PARENTHESIS_EXP2 = r"(?<=(\())(\(.*\))(?=(.*\())"
 
-##OPERATOR_OR_OPERAND = r"(\w+|[|&])"
-##OPERATOR_OR_OPERAND = r"(!?\w+|[|&])"
 OPERATOR_OR_OPERAND = r"(\w+|[!|&])"
 
 
@@ -116,6 +110,8 @@ class ExprTree:
 
         self.loc = None
         self.occupiedIndices = set()
+
+        self.permIterable = None
 
     """
     ATTENTION: this method is used to fix a bug during parsing of string.
@@ -277,7 +273,9 @@ class ExprTree:
     description:
     - parses `substring` into an ExprTreeNode
     """
-    def parse_into_tree(self, substring, node):
+    def parse_into_tree(self, substring, node, prev = None):
+
+        if node == False: return False
 
         varData, substring = ExprTree.fetch_next_var(substring)
 
@@ -288,10 +286,22 @@ class ExprTree:
         if varData["type"] == "op":
             isOperator = ExprTree.is_operator(varData["info"])
 
-            # check if current root is operand
+            # syntactical check
             if node != None:
                 isOperand = not ExprTree.is_operator(node.val)
-                assert (isOperator and isOperand) or not (isOperator and isOperand), "invalid substring"
+                ##assert (isOperator and isOperand) or not (isOperator and isOperand), "invalid substring"
+                ##print("NODE:\t", node)
+                v1 = isOperator and isOperand # if current symbol is operand, then previous must be operator
+                v2 = not isOperator and not isOperand
+                v3 = prev == None
+                v4 = varData["info"] in {"&", "|"} and prev not in {"&", "|"} # if current symbol is & or |, previous can't
+                v5 = varData["info"] == "!" and prev in {"&", "|"}
+
+                if not (v1 or v2 or v3 or v4 or v5):
+                    return False
+
+            else:
+                if varData["info"] in {"&", "|"}: return False 
 
             # if operator, make parent else child
             newNode = ExprTreeNode(varData["info"])
@@ -310,10 +320,7 @@ class ExprTree:
 
             x = deepcopy(node)
             x = ExprTree.rewind_to_root_(x)
-            ##print("CURRENT TREE:\t", ExprTree.traversal_display(x))
-            ##print("current val:\t", node.val)
-
-            return self.parse_into_tree(substring, node)
+            return self.parse_into_tree(substring, node, varData["info"])
         else:
             info = varData["info"]
             info = info[1:-1]
@@ -326,9 +333,7 @@ class ExprTree:
 
             x = deepcopy(node)
             x = ExprTree.rewind_to_root_(x)
-            ##print("CURRENT TREE:\t", ExprTree.traversal_display(x))
-            ##print("current val:\t", node.val)
-            return self.parse_into_tree(substring, node)
+            return self.parse_into_tree(substring, node, None)
 
     """
     description:
@@ -339,8 +344,9 @@ class ExprTree:
     """
     def parse(self):
         self.parsedEas = self.parse_into_tree(self.eas, None)
-        self.parsedEas = ExprTree.rewind_to_root_(self.parsedEas)
-        self.assign_parents(self.parsedEas)
+        if self.parsedEas != False:
+            self.parsedEas = ExprTree.rewind_to_root_(self.parsedEas)
+            self.assign_parents(self.parsedEas)
         return self.parsedEas
 
     """
@@ -413,6 +419,7 @@ class ExprTree:
             q = ExprTree.traversal_display(subtree.left if subtree.left != None else subtree.right, displayType)
             return val + open + q + close
 
+    """
     @staticmethod
     def test_display(node):
 
@@ -426,6 +433,7 @@ class ExprTree:
             d(node.right)
 
         d(node)
+    """
 
 
 
@@ -503,7 +511,7 @@ class ExprTree:
     - outputs the decision and a dictionary of key=nodeIdentifier value=choice
         in which each nodeIdentifier belongs to an OR node
     """
-    def inorder_decision_finder(self):
+    def inorder_decision_finder(self, permIterable = None):
 
         def choose_child(node, direction):
             assert node != None, "node cannot be None!"
@@ -561,7 +569,8 @@ class ExprTree:
             self.possibleDecisions[0] = deepcopy(self.parsedEas)
             return
 
-        permIterable = ExprTree.get_binary_permutations(length, ["l", "r"])
+        if permIterable == None:
+            permIterable = ExprTree.get_binary_permutations(length, ["l", "r"])
 
         # construct a tree for each possible path
         c = 0
@@ -585,6 +594,18 @@ class ExprTree:
                 uniqueDecisions.add(dec)
                 c += 1
 
+    # TODO
+    def inorder_decision_finder_partitioned(self, hop = 100):
+
+        self.permIterable = ExprTree.get_binary_permutations(length, ["l", "r"])
+
+        q = [next(self.permIterable) for i in range(hop)]
+
+
+
+
+        return -1
+
 
     @staticmethod
     def rewind_to_root_(node):
@@ -597,7 +618,6 @@ class ExprTree:
                 break
         return node
 
-    # TODO : below fix
     def rewind_to_root(self, index):
         if self.possibleDecisions[index] == None: return
 
@@ -657,7 +677,6 @@ class ExprTree:
 
 
         return locate(self.parsedEas)
-        #return self.loc
 
     """
     description:
@@ -730,17 +749,6 @@ class ExprTree:
         get_involved(subtree)
         return involved
 
-    """
-    description:
-    -
-    """
-    @staticmethod
-    def get_violation(notSubtree):
-        return -1
-
-    def pop_not_subtree():
-        return -1
-
     def split_tree_at_node(self, node):
 
         q = node.parent
@@ -755,7 +763,6 @@ class ExprTree:
         else:
             q.left = None
 
-        #node.parent = None
         q = ExprTree.rewind_to_root_(q)
         return node, q
 
@@ -809,8 +816,7 @@ class ExprTree:
     - output := list|gen
     """
     @staticmethod
-    def choice_tree_to_options(choice, output = "list"):
-        assert output in {"list", "gen"}
+    def choice_tree_to_options(choice):
         options = []
         options.append(deepcopy(choice))
 
@@ -848,10 +854,7 @@ class ExprTree:
             if q_ == False:
                 break
 
-        if output == "list":
-            return options
-        else:
-            for o in options: yield o
+        return options
 
     @staticmethod
     def option_tree_to_dict(optionTree):
@@ -867,7 +870,7 @@ class ExprTree:
 
             convert(n.left)
             convert(n.right)
-            
+
         convert(optionTree)
         return d
 
@@ -918,22 +921,5 @@ class ExprTree:
         return decisionCopy
 
     def process(self):
-        self.parse()
-        self.inorder_decision_finder()
-
-    # TODO:
-    """
-    matching variables vs variable values.
-    """
-    ################################ TODO: below 2 methods needs to be designed and
-    ################################       implemented tonight.
-    """
-    """
-    def get_truth_score(self, truthMap):
-        return -1
-
-    """
-    occurrenceMap := dict, key is expression, value is probability
-    """
-    def get_occurrence_score(self, occurrenceMap):
-        return -1
+        if self.parse():
+            self.inorder_decision_finder()
